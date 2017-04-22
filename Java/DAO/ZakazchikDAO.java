@@ -4,6 +4,6 @@ package DAO;
  *
  * @author Student
  */
-public class ZakazchikDAO {
+public class ZakazchikDAO  {
     
 }
