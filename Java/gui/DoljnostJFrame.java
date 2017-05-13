@@ -1,9 +1,16 @@
 package gui;
 
+import dao.DoljnostDAO;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import model.Doljnost;
 import org.jdesktop.observablecollections.ObservableCollections;
 import org.jdesktop.observablecollections.ObservableList;
+import system.DataBase;
 
 
 /**
@@ -15,6 +22,9 @@ public class DoljnostJFrame extends javax.swing.JFrame {
 private final ObservableList<Doljnost> doljnost = ObservableCollections.observableList(new ArrayList<>());
 
 private Doljnost currentDoljnost;
+private DoljnostDAO dao;
+    private Doljnost currentdoljnost;
+
 
     public Doljnost getCurrentDoljnost() {
         return currentDoljnost;
@@ -35,14 +45,15 @@ private Doljnost currentDoljnost;
      * Creates new form DoljnostJFrame
      */
     public DoljnostJFrame() {
-        Doljnost d = new Doljnost();
-        d.setName("asdasd");
-        d.setOklad(1.5f);
-        d.setObyazannost("adadada");
-        d.setTrebovaniya("bdbdf");
-        currentDoljnost = d;
+    try {
+        Connection con;
+        con = DataBase.connect();
+        dao = new DoljnostDAO(con);
         initComponents();
-        doljnost.add(d);
+    } catch (SQLException ex) {
+        Logger.getLogger(DoljnostJFrame.class.getName()).log(Level.SEVERE, null, ex);
+    }
+       
         
     }
 
@@ -57,7 +68,7 @@ private Doljnost currentDoljnost;
         bindingGroup = new org.jdesktop.beansbinding.BindingGroup();
 
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new javax.swing.JTable();
+        table = new javax.swing.JTable();
         controlpanel = new javax.swing.JPanel();
         createBtn = new javax.swing.JButton();
         deleteBtn = new javax.swing.JButton();
@@ -73,9 +84,14 @@ private Doljnost currentDoljnost;
         jTextField5 = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowOpened(java.awt.event.WindowEvent evt) {
+                formWindowOpened(evt);
+            }
+        });
 
         org.jdesktop.beansbinding.ELProperty eLProperty = org.jdesktop.beansbinding.ELProperty.create("${doljnost}");
-        org.jdesktop.swingbinding.JTableBinding jTableBinding = org.jdesktop.swingbinding.SwingBindings.createJTableBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ, this, eLProperty, jTable1);
+        org.jdesktop.swingbinding.JTableBinding jTableBinding = org.jdesktop.swingbinding.SwingBindings.createJTableBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ, this, eLProperty, table);
         org.jdesktop.swingbinding.JTableBinding.ColumnBinding columnBinding = jTableBinding.addColumnBinding(org.jdesktop.beansbinding.ELProperty.create("${name}"));
         columnBinding.setColumnName("Название");
         columnBinding.setColumnClass(String.class);
@@ -93,10 +109,10 @@ private Doljnost currentDoljnost;
         columnBinding.setColumnClass(String.class);
         columnBinding.setEditable(false);
         bindingGroup.addBinding(jTableBinding);
-        jTableBinding.bind();org.jdesktop.beansbinding.Binding binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, this, org.jdesktop.beansbinding.ELProperty.create("${currentDoljnost}"), jTable1, org.jdesktop.beansbinding.BeanProperty.create("selectedElement"));
+        jTableBinding.bind();org.jdesktop.beansbinding.Binding binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, this, org.jdesktop.beansbinding.ELProperty.create("${currentDoljnost}"), table, org.jdesktop.beansbinding.BeanProperty.create("selectedElement"));
         bindingGroup.addBinding(binding);
 
-        jScrollPane1.setViewportView(jTable1);
+        jScrollPane1.setViewportView(table);
 
         controlpanel.setBorder(new javax.swing.border.MatteBorder(null));
         controlpanel.setLayout(new javax.swing.BoxLayout(controlpanel, javax.swing.BoxLayout.LINE_AXIS));
@@ -110,9 +126,19 @@ private Doljnost currentDoljnost;
         controlpanel.add(createBtn);
 
         deleteBtn.setText("Удалить");
+        deleteBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                deleteBtnActionPerformed(evt);
+            }
+        });
         controlpanel.add(deleteBtn);
 
         saveBtn.setText("Сохранить");
+        saveBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                saveBtnActionPerformed(evt);
+            }
+        });
         controlpanel.add(saveBtn);
 
         importPanel.setLayout(new java.awt.GridLayout(4, 2));
@@ -120,7 +146,9 @@ private Doljnost currentDoljnost;
         jLabel1.setText("Название");
         importPanel.add(jLabel1);
 
-        binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, this, org.jdesktop.beansbinding.ELProperty.create("${currentDoljnost.name}"), jTextField1, org.jdesktop.beansbinding.BeanProperty.create("text"));
+        binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, table, org.jdesktop.beansbinding.ELProperty.create("${selectedElement.name}"), jTextField1, org.jdesktop.beansbinding.BeanProperty.create("text"));
+        binding.setSourceNullValue("");
+        binding.setSourceUnreadableValue(null);
         bindingGroup.addBinding(binding);
 
         jTextField1.addActionListener(new java.awt.event.ActionListener() {
@@ -133,7 +161,10 @@ private Doljnost currentDoljnost;
         jLabel2.setText("Оклад");
         importPanel.add(jLabel2);
 
-        binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, this, org.jdesktop.beansbinding.ELProperty.create("${currentDoljnost.oklad}"), jSpinner1, org.jdesktop.beansbinding.BeanProperty.create("value"));
+        jSpinner1.setModel(new javax.swing.SpinnerNumberModel(0.0f, null, null, 1.0f));
+
+        binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, table, org.jdesktop.beansbinding.ELProperty.create("${selectedElement.oklad}"), jSpinner1, org.jdesktop.beansbinding.BeanProperty.create("value"));
+        binding.setSourceNullValue(0f);
         bindingGroup.addBinding(binding);
 
         importPanel.add(jSpinner1);
@@ -141,7 +172,9 @@ private Doljnost currentDoljnost;
         jLabel3.setText("Обязанности");
         importPanel.add(jLabel3);
 
-        binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, this, org.jdesktop.beansbinding.ELProperty.create("${currentDoljnost.obyazannost}"), jTextField4, org.jdesktop.beansbinding.BeanProperty.create("text"));
+        binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, table, org.jdesktop.beansbinding.ELProperty.create("${selectedElement.obyazannost}"), jTextField4, org.jdesktop.beansbinding.BeanProperty.create("text"));
+        binding.setSourceNullValue(null);
+        binding.setSourceUnreadableValue(null);
         bindingGroup.addBinding(binding);
 
         importPanel.add(jTextField4);
@@ -189,7 +222,10 @@ private Doljnost currentDoljnost;
     }// </editor-fold>//GEN-END:initComponents
 
     private void createBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_createBtnActionPerformed
-        System.out.println("Создать");
+        Doljnost d = new Doljnost();
+        doljnost.add(d);
+        int idx = doljnost.size() - 1;
+        table.setRowSelectionInterval(idx, idx);
     }//GEN-LAST:event_createBtnActionPerformed
 
     private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
@@ -200,6 +236,25 @@ private Doljnost currentDoljnost;
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField5ActionPerformed
 
+    private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
+    load();
+    }//GEN-LAST:event_formWindowOpened
+
+    private void saveBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveBtnActionPerformed
+   int idx = table.getSelectedRow();
+   Doljnost d = doljnost.get(idx);
+   dao.save(d);
+    }//GEN-LAST:event_saveBtnActionPerformed
+
+    private void deleteBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteBtnActionPerformed
+    dao.delete(currentdoljnost);
+    doljnost.remove(currentdoljnost);
+    }//GEN-LAST:event_deleteBtnActionPerformed
+
+    private void load() {
+    
+        doljnost.addAll(dao.readAll());
+    }
     /**
      * @param args the command line arguments
      */
@@ -246,11 +301,11 @@ private Doljnost currentDoljnost;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSpinner jSpinner1;
-    private javax.swing.JTable jTable1;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField4;
     private javax.swing.JTextField jTextField5;
     private javax.swing.JButton saveBtn;
+    private javax.swing.JTable table;
     private org.jdesktop.beansbinding.BindingGroup bindingGroup;
     // End of variables declaration//GEN-END:variables
 }
